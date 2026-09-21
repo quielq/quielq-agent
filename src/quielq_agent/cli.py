@@ -9,7 +9,9 @@ import argparse
 import asyncio
 import sys
 
-from quielq_agent.config import AgentConfig, ConfigError, load_agent_config
+from dotenv import load_dotenv
+
+from quielq_agent.config import PROJECT_ROOT, AgentConfig, ConfigError, load_agent_config
 from quielq_agent.llm import OllamaAuthError, OllamaCallError
 from quielq_agent.loop import MaxIterationsExceeded, run_turn
 from quielq_agent.tools import ToolRegistry, default_registry
@@ -61,6 +63,7 @@ async def _chat_loop(config: AgentConfig, registry: ToolRegistry) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_dotenv(PROJECT_ROOT / ".env")
     args = parse_args(argv)
     try:
         config = load_agent_config(args.config)

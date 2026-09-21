@@ -1,9 +1,8 @@
 # Phase 0 test agent: simplest possible round-trip, no tools.
 name: echo
 display_name: "Echo (no tools)"
-# Placeholder - verify against `ollama list` (signed in) or the Ollama cloud
-# catalog page before running. Do not trust this name blindly.
-model: gpt-oss:20b-cloud
+# Confirmed against the live Ollama cloud catalog (client.list(), 2026-09-21).
+model: gpt-oss:20b
 system_prompt_file: fleet/prompts/echo.md
 tools:
   allow: []

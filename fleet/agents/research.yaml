@@ -2,9 +2,8 @@
 # web_search API (same OLLAMA_API_KEY, no separate search provider needed).
 name: research
 display_name: "Research"
-# Placeholder - verify against `ollama list` (signed in) or the Ollama cloud
-# catalog page before running. Do not trust this name blindly.
-model: qwen3:235b-cloud
+# Confirmed against the live Ollama cloud catalog (client.list(), 2026-09-21).
+model: gpt-oss:120b
 system_prompt_file: fleet/prompts/research.md
 tools:
   allow: [web_search]
