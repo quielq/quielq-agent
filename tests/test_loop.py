@@ -103,3 +103,52 @@ async def test_run_turn_raises_after_max_iterations(monkeypatch):
 
     with pytest.raises(loop.MaxIterationsExceeded):
         await loop.run_turn(config, messages, registry)
+
+
+async def test_run_turn_injects_time_context_without_persisting_it(monkeypatch):
+    seen_messages = []
+
+    async def fake_chat(model, messages, tools=None, num_ctx=8192):
+        seen_messages.append(messages)
+        return FakeResponse(FakeMessage(content="hi there"))
+
+    monkeypatch.setattr(loop.llm, "chat", fake_chat)
+
+    registry = ToolRegistry()
+    config = _config([])
+    messages = [{"role": "system", "content": "you are echo"}, {"role": "user", "content": "hello"}]
+
+    result = await loop.run_turn(config, messages, registry)
+
+    # llm.chat saw a time-context message inserted right after the system prompt...
+    call_messages = seen_messages[0]
+    assert call_messages[0] == {"role": "system", "content": "you are echo"}
+    assert call_messages[1]["role"] == "system"
+    assert "Current date and time" in call_messages[1]["content"]
+    assert call_messages[2] == {"role": "user", "content": "hello"}
+    # ...but it never leaks into the persisted/returned history.
+    assert all("Current date and time" not in m.get("content", "") for m in result)
+    assert len(result) == 3  # system, user, assistant - no extra message appended
+
+
+async def test_run_turn_passes_tool_context(monkeypatch):
+    async def fake_chat(model, messages, tools=None, num_ctx=8192):
+        return FakeResponse(FakeMessage(tool_calls=[FakeToolCall("whoami", {})]))
+
+    monkeypatch.setattr(loop.llm, "chat", fake_chat)
+
+    captured = {}
+
+    def whoami(context=None):
+        captured["context"] = context
+        return "ok"
+
+    registry = ToolRegistry()
+    registry.register("whoami", whoami, {"type": "function", "function": {"name": "whoami"}})
+    config = _config(["whoami"])
+    messages = [{"role": "user", "content": "hello"}]
+
+    with pytest.raises(loop.MaxIterationsExceeded):
+        await loop.run_turn(config, messages, registry)
+
+    assert captured["context"].agent_name == "t"

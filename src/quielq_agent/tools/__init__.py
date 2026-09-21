@@ -4,9 +4,23 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Awaitable, Callable, Union
 
 ToolFunc = Callable[..., Union[str, Awaitable[str]]]
+
+
+@dataclass
+class ToolContext:
+    """Per-call agent context, injected only into tools that ask for it.
+
+    A tool function opts in by declaring a `context` parameter; the registry
+    checks with `inspect.signature` before passing it, so tools that don't
+    need agent scoping (like web_search) are unaffected.
+    """
+
+    agent_name: str
+    memory_dir: Path | None
 
 
 @dataclass
@@ -36,12 +50,20 @@ class ToolRegistry:
     def schemas_for(self, names: list[str]) -> list[dict[str, Any]]:
         return [self._tools[name].schema for name in names]
 
-    async def execute(self, name: str, arguments: dict[str, Any]) -> str:
+    async def execute(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        context: ToolContext | None = None,
+    ) -> str:
         tool = self._tools.get(name)
         if tool is None:
             return f"error: unknown tool {name!r}"
         try:
-            result = tool.func(**arguments)
+            call_kwargs = dict(arguments)
+            if context is not None and "context" in inspect.signature(tool.func).parameters:
+                call_kwargs["context"] = context
+            result = tool.func(**call_kwargs)
             if inspect.isawaitable(result):
                 result = await result
             return str(result)
@@ -50,8 +72,10 @@ class ToolRegistry:
 
 
 def default_registry() -> ToolRegistry:
+    from quielq_agent.tools.approval import REQUEST_APPROVAL_SCHEMA, request_approval
     from quielq_agent.tools.web_search import WEB_SEARCH_SCHEMA, web_search
 
     registry = ToolRegistry()
     registry.register("web_search", web_search, WEB_SEARCH_SCHEMA)
+    registry.register("request_approval", request_approval, REQUEST_APPROVAL_SCHEMA)
     return registry
