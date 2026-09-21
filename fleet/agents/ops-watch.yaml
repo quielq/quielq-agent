@@ -1,0 +1,22 @@
+# Bumped from gpt-oss:20b to 120b (2026-09-21): 20b was unreliable at this
+# agent's 2-part checklist (PAGASA + GitHub CI), repeatedly re-searching and
+# cross-verifying PAGASA PDFs across multiple sources instead of committing
+# to an answer, hitting MAX_ITERATIONS in 2 of 3 live test runs before ever
+# checking GitHub. Reproduced with instrumented iteration logging, not
+# guessed. Cost difference is trivial at ~4 calls/day (see the plan doc's
+# costing section).
+name: ops-watch
+display_name: "Ops Watch"
+model: gpt-oss:120b
+system_prompt_file: fleet/prompts/ops-watch.md
+tools:
+  allow: [web_search, web_fetch, github_repo]
+memory_dir: fleet/memory/ops-watch
+schedule:
+  - cron: "0 */6 * * *"
+    message: >
+      Check https://www.pagasa.dost.gov.ph for a new Climate Outlook or
+      advisory; if there's something new, summarize it. Also check the
+      recent GitHub Actions status for quielq/quielq-agent using
+      github_repo and note any failures.
+    deliver_to: memory

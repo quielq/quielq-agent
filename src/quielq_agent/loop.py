@@ -11,7 +11,7 @@ from quielq_agent.config import AgentConfig
 from quielq_agent.time_context import current_time_message
 from quielq_agent.tools import ToolContext, ToolRegistry
 
-MAX_ITERATIONS = 8
+MAX_ITERATIONS = 12
 
 
 class MaxIterationsExceeded(RuntimeError):

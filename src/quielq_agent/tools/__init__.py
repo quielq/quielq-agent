@@ -73,9 +73,15 @@ class ToolRegistry:
 
 def default_registry() -> ToolRegistry:
     from quielq_agent.tools.approval import REQUEST_APPROVAL_SCHEMA, request_approval
+    from quielq_agent.tools.github_repo import GITHUB_REPO_SCHEMA, github_repo
+    from quielq_agent.tools.local_search import LOCAL_SEARCH_SCHEMA, local_search
+    from quielq_agent.tools.web_fetch import WEB_FETCH_SCHEMA, web_fetch
     from quielq_agent.tools.web_search import WEB_SEARCH_SCHEMA, web_search
 
     registry = ToolRegistry()
     registry.register("web_search", web_search, WEB_SEARCH_SCHEMA)
+    registry.register("web_fetch", web_fetch, WEB_FETCH_SCHEMA)
+    registry.register("local_search", local_search, LOCAL_SEARCH_SCHEMA)
+    registry.register("github_repo", github_repo, GITHUB_REPO_SCHEMA)
     registry.register("request_approval", request_approval, REQUEST_APPROVAL_SCHEMA)
     return registry

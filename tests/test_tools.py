@@ -88,3 +88,100 @@ def test_request_approval_without_context_errors_cleanly():
 
     result = request_approval("do something", "because", context=None)
     assert result.startswith("error:")
+
+
+def test_default_registry_has_new_phase1_tools():
+    registry = default_registry()
+    assert {"web_fetch", "local_search", "github_repo"} <= registry.known_names()
+
+
+def test_web_fetch_requires_api_key(monkeypatch):
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+    from quielq_agent.tools.web_fetch import web_fetch
+
+    with pytest.raises(OllamaAuthError):
+        web_fetch("https://example.com")
+
+
+def test_local_search_without_context_errors_cleanly():
+    from quielq_agent.tools.local_search import local_search
+
+    result = local_search("anything", context=None)
+    assert result.startswith("error:")
+
+
+def test_local_search_missing_knowledge_dir(tmp_path):
+    from quielq_agent.tools.local_search import local_search
+
+    context = ToolContext(agent_name="research", memory_dir=tmp_path)
+    assert "No knowledge/ folder" in local_search("anything", context=context)
+
+
+def test_local_search_empty_knowledge_dir(tmp_path):
+    from quielq_agent.tools.local_search import local_search
+
+    (tmp_path / "knowledge").mkdir()
+    context = ToolContext(agent_name="research", memory_dir=tmp_path)
+    assert "empty" in local_search("anything", context=context)
+
+
+def test_local_search_ranks_matching_document(tmp_path):
+    from quielq_agent.tools.local_search import local_search
+
+    knowledge = tmp_path / "knowledge"
+    knowledge.mkdir()
+    (knowledge / "onit.md").write_text("Notes about the onit agent framework and MCP tool discovery.")
+    (knowledge / "weather.md").write_text("Manila is hot and humid most of the year.")
+
+    context = ToolContext(agent_name="research", memory_dir=tmp_path)
+    result = local_search("onit MCP framework", context=context)
+
+    assert "onit.md" in result
+    assert "weather.md" not in result
+
+
+def test_github_repo_handles_404(monkeypatch):
+    from quielq_agent.tools import github_repo as github_repo_module
+
+    class FakeResponse:
+        status_code = 404
+
+    def fake_get(url, headers=None, params=None, timeout=None):
+        return FakeResponse()
+
+    monkeypatch.setattr(github_repo_module.httpx, "get", fake_get)
+
+    result = github_repo_module.github_repo("quielq/does-not-exist")
+    assert result.startswith("error:")
+
+
+def test_github_repo_formats_workflow_runs(monkeypatch):
+    from quielq_agent.tools import github_repo as github_repo_module
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "workflow_runs": [
+                    {
+                        "name": "CI",
+                        "status": "completed",
+                        "conclusion": "success",
+                        "head_branch": "main",
+                        "updated_at": "2026-09-21T00:00:00Z",
+                    }
+                ]
+            }
+
+    def fake_get(url, headers=None, params=None, timeout=None):
+        return FakeResponse()
+
+    monkeypatch.setattr(github_repo_module.httpx, "get", fake_get)
+
+    result = github_repo_module.github_repo("quielq/quielq-agent")
+    assert "CI" in result
+    assert "success" in result
