@@ -18,6 +18,34 @@ class ToolsConfig(BaseModel):
     allow: list[str] = Field(default_factory=list)
 
 
+class WebChannel(BaseModel):
+    path: str
+
+
+class TelegramChannel(BaseModel):
+    bot_token_env: str
+    allowed_user_ids: list[int] = Field(default_factory=list)
+
+
+class ChannelsConfig(BaseModel):
+    web: WebChannel | None = None
+    # Deferred (see the plan doc's Phase 1 backlog note) - field kept so the
+    # schema is ready whenever Telegram gets picked back up. Nothing reads
+    # this yet.
+    telegram: TelegramChannel | None = None
+
+
+class LimitsConfig(BaseModel):
+    max_tokens_per_day: int | None = None
+    max_usd_per_day: float | None = None
+
+
+class ScheduleEntry(BaseModel):
+    cron: str
+    message: str
+    deliver_to: str | None = None
+
+
 class AgentConfig(BaseModel):
     name: str
     display_name: str
@@ -25,6 +53,9 @@ class AgentConfig(BaseModel):
     system_prompt_file: str
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     memory_dir: str | None = None
+    channels: ChannelsConfig = Field(default_factory=ChannelsConfig)
+    limits: LimitsConfig = Field(default_factory=LimitsConfig)
+    schedule: list[ScheduleEntry] = Field(default_factory=list)
 
     @property
     def system_prompt_path(self) -> Path:

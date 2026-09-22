@@ -1,10 +1,8 @@
-# Phase 0 test agent: proves the tool-call loop using Ollama cloud's built-in
-# web_search API (same OLLAMA_API_KEY, no separate search provider needed).
+# Confirmed against the live Ollama cloud catalog (client.list(), 2026-09-21).
 name: research
 display_name: "Research"
-# Confirmed against the live Ollama cloud catalog (client.list(), 2026-09-21).
 model: gpt-oss:120b
 system_prompt_file: fleet/prompts/research.md
 tools:
-  allow: [web_search]
+  allow: [web_search, local_search]
 memory_dir: fleet/memory/research
