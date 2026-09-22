@@ -185,3 +185,36 @@ def test_github_repo_formats_workflow_runs(monkeypatch):
     result = github_repo_module.github_repo("quielq/quielq-agent")
     assert "CI" in result
     assert "success" in result
+
+
+def test_default_registry_has_create_docx():
+    registry = default_registry()
+    assert "create_docx" in registry.known_names()
+
+
+def test_create_docx_without_context_errors_cleanly():
+    from quielq_agent.tools.docx import create_docx
+
+    result = create_docx("x", "Title", "Body", context=None)
+    assert result.startswith("error:")
+
+
+def test_create_docx_writes_real_docx_file(tmp_path):
+    from docx import Document
+
+    from quielq_agent.tools.docx import create_docx
+
+    context = ToolContext(agent_name="writer", memory_dir=tmp_path)
+    result = create_docx(
+        "my draft!", "My Title", "First paragraph.\n\nSecond paragraph.", context=context
+    )
+
+    assert "Saved to drafts/mydraft.docx" in result
+    path = tmp_path / "drafts" / "mydraft.docx"
+    assert path.is_file()
+
+    document = Document(path)
+    paragraphs = [p.text for p in document.paragraphs]
+    assert "My Title" in paragraphs
+    assert "First paragraph." in paragraphs
+    assert "Second paragraph." in paragraphs

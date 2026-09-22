@@ -73,6 +73,7 @@ class ToolRegistry:
 
 def default_registry() -> ToolRegistry:
     from quielq_agent.tools.approval import REQUEST_APPROVAL_SCHEMA, request_approval
+    from quielq_agent.tools.docx import CREATE_DOCX_SCHEMA, create_docx
     from quielq_agent.tools.github_repo import GITHUB_REPO_SCHEMA, github_repo
     from quielq_agent.tools.local_search import LOCAL_SEARCH_SCHEMA, local_search
     from quielq_agent.tools.web_fetch import WEB_FETCH_SCHEMA, web_fetch
@@ -84,4 +85,5 @@ def default_registry() -> ToolRegistry:
     registry.register("local_search", local_search, LOCAL_SEARCH_SCHEMA)
     registry.register("github_repo", github_repo, GITHUB_REPO_SCHEMA)
     registry.register("request_approval", request_approval, REQUEST_APPROVAL_SCHEMA)
+    registry.register("create_docx", create_docx, CREATE_DOCX_SCHEMA)
     return registry

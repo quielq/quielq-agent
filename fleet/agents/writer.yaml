@@ -1,0 +1,12 @@
+# Repurposed from the original substack-editor concept (2026-09-22): dropped
+# Substack/Figma specifics in favor of general document drafting. Google Docs
+# support is a planned addition once the shared Google OAuth setup daily-brief
+# also needs exists - create_docx (local .docx, no credentials needed) covers
+# v1.
+name: writer
+display_name: "Writer"
+model: gpt-oss:120b
+system_prompt_file: fleet/prompts/writer.md
+tools:
+  allow: [local_search, create_docx]
+memory_dir: fleet/memory/writer
